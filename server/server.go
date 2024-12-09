@@ -1,4 +1,4 @@
-package jinrpc
+package server
 
 import (
 	"encoding/json"
@@ -114,6 +114,9 @@ func (server *Server) readRequest(cc codec.Codec) (*request, error) {
 	}
 	req := &request{h: h}
 	req.argv = reflect.New(reflect.TypeOf(""))
+	if err = cc.ReadBody(req.argv.Interface()); err != nil {
+		log.Println("rpc server: read argv err:", err)
+	}
 	return req, nil
 }
 
@@ -127,9 +130,8 @@ func (server *Server) sendResponse(cc codec.Codec, h *codec.Header, body interfa
 
 func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.Mutex, wg *sync.WaitGroup) {
 	// TODO, should call registered rpc methods to get the right replyv
-	// day 1, just print argv and send a hello message
 	defer wg.Done()
 	log.Println(req.h, req.argv.Elem())
-	req.replyv = reflect.ValueOf(fmt.Sprintf("geerpc resp %d", req.h.Seq))
+	req.replyv = reflect.ValueOf(fmt.Sprintf("rpc resp %d", req.h.Seq))
 	server.sendResponse(cc, req.h, req.replyv.Interface(), sending)
 }
